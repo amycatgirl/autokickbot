@@ -14,7 +14,7 @@ client.once("ready", () => {
 
 client.on("serverCreate", async s => await guildJoin(s))
 client.on("serverLeave", async s => await guildLeave(s))
-client.on("messageCreate", s => messageSend(s))
+client.on("messageCreate", async s => await messageSend(s))
 
 client.on("messageCreate", (message) => {
 	if (
