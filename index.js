@@ -1,5 +1,8 @@
-import { Client } from "revolt.js"
 import "dotenv/config"
+import "./database/index.js"
+
+import { Client } from "revolt.js"
+import { guildJoin, guildLeave, messageSend } from "./events/index.js"
 
 const client = new Client()
 const { AK_TOKEN, AK_PREFIX } = process.env
@@ -9,8 +12,17 @@ client.once("ready", () => {
 	console.info(`Logged in as ${client.user.username}. Watching ${client.servers.size()} servers.`)
 })
 
+client.on("serverCreate", async s => await guildJoin(s))
+client.on("serverLeave", async s => await guildLeave(s))
+client.on("messageCreate", s => messageSend(s))
+
 client.on("messageCreate", (message) => {
-	if (message.author.bot || message.author.id === client.user.id || !message.content || !message.content.startsWith(AK_PREFIX)) return
+	if (
+		message.author.bot ||
+		message.author.id === client.user.id ||
+		!message.content ||
+		!message.content.startsWith(AK_PREFIX)
+	) return
 
 	const args = message.content
 		.trim()
