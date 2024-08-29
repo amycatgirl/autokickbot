@@ -33,6 +33,9 @@ class Command {
 	async execute() {}
 }
 
+/**
+ * AK Command Handler, handles finding and storing commands in memory
+ */
 class CommandHandler {
 
 	/** @type {Map<string, Command> }*/
