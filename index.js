@@ -2,16 +2,21 @@ import "dotenv/config"
 import "./database/index.js"
 
 import { Client } from "revolt.js"
+import { CommandHandler } from "./commands/index.js"
 import { guildJoin, guildLeave, messageSend } from "./events/index.js"
 
 const client = new Client()
+const commandHandler = new CommandHandler()
 const { AK_TOKEN, AK_PREFIX } = process.env
 
 client.once("ready", () => {
 	console.log("Ready!")
 	console.info(`Logged in as ${client.user.username}. Watching ${client.servers.size()} servers.`)
+
 })
 
+// TODO make this a bit cleaner maybe?
+// is it even necesary though
 client.on("serverCreate", async s => await guildJoin(s))
 client.on("serverLeave", async s => await guildLeave(s))
 client.on("messageCreate", async s => await messageSend(s))
