@@ -36,9 +36,6 @@ async function registerCommands() {
 client.once("ready", () => {
 	console.log("Ready!")
 	console.info(`Logged in as ${client.user.username}. Watching ${client.servers.size()} servers.`)
-
-	// TODO decouple logic
-
 })
 
 client.once("ready", () => thisisthepartwherehekillsyou(client))
@@ -63,6 +60,11 @@ client.on("messageCreate", async (message) => {
 		.split(/ +/g)
 
 	const requestedCommand = args?.shift()
+
+	if (requestedCommand === "help") {
+		message.reply(commandHandler.list.map(c => `${c.name} - ${c.description}\n`).join(""))
+		return;
+	}
 	console.info(`[INFO] Trying to find ${requestedCommand} in CommandHandler...`)
 	const command = commandHandler.find(requestedCommand)
 

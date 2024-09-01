@@ -18,10 +18,9 @@ const knex = Knex({
  */
 
 /**
- * @function
- * @prop {string} id - Server id
- * @returns {Knex.QueryBuilder<ServerActivity, {}>}
+ * @param {string} id - Server id
+ * @returns {import("knex").QueryBuilder<ServerActivity, {}>}
  */
-const Server = (id) => knex(id)
+function Server(id) { return knex(id) }
 
 export { knex, Server }
