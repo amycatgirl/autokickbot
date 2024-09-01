@@ -18,6 +18,13 @@
  * @returns {Promise<string | void>}
  */
 
+/**
+ * Check if the command has the minimum amount of arguments required
+ * @function
+ * @name Command#checkArguments
+ * @param {string[]} args - Arguments that will be passed to the command
+ */
+
 
 /**
  * AK command, can be registered via the command handler class
@@ -27,10 +34,15 @@ class Command {
 	constructor() {
 		this.name = ""
 		this.description = null
+		this.usage = null
 		this.requiredArguments = null
 	}
 
 	async execute() {}
+
+	checkArguments(args) {
+		if (args.length < this.requiredArguments ?? 0) throw new Error(`You are missing ${this.requiredArguments - args.length} arguments.`)
+	}
 }
 
 /**
@@ -50,9 +62,10 @@ class CommandHandler {
 	}
 
 	/**
-	 * @param {Command} Command - Command to register
+	 * @param {Command} command - Command to register
 	 */
 	register(command) {
+		console.log(`[INFO] Registered command ${command.name} with ${command.requiredArguments} required args.`)
 		this.#commands.set(
 			command.name,
 			command
@@ -67,4 +80,4 @@ class CommandHandler {
 	}
 }
 
-export { CommandHandler } 
+export { CommandHandler, Command } 
