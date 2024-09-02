@@ -3,7 +3,6 @@ import { Server } from "../database/index.js"
  * @param {import("revolt.js").Message} message
  */
 async function messageSend(message) {
-	console.log("New message!")
 	if (message.author.bot || !message.server || message.systemMessage || !message.author) return // Exclude bot users from the action
 
 	// check if the user is already in the database
@@ -15,11 +14,9 @@ async function messageSend(message) {
 			lastActive: message.createdAt
 		})
 	} else {
-		console.log(user)
 		await Server(message.server.id).where("user", message.author.id).update({
 			lastActive: message.createdAt
 		})
-
 	}
 }
 

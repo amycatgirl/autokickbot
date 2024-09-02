@@ -5,6 +5,7 @@ import fs from "node:fs"
 import { Client } from "revolt.js"
 import { CommandHandler } from "./commands/index.js"
 import { guildJoin, guildLeave, messageSend, thisisthepartwherehekillsyou } from "./events/index.js"
+import { Log } from "./utilities/log.js"
 
 const client = new Client()
 const commandHandler = new CommandHandler()
@@ -18,8 +19,6 @@ async function registerCommands() {
 			for (const file of commandFiles) {
 				/** @type {import("./commands").Command} */
 				const { default: command} = await import(`./commands/${element}/${file}`)
-				
-				console.log(command)
 
 				commandHandler.register(new command())
 			}
@@ -28,14 +27,14 @@ async function registerCommands() {
 		}
 	}
 
-	console.info("[INFO] Registered " + commandHandler.list.length + " commands") 
+	Log.d("handler", "Registered " + commandHandler.list.length + " commands") 
 }
 
 
 
 client.once("ready", () => {
-	console.log("Ready!")
-	console.info(`Logged in as ${client.user.username}. Watching ${client.servers.size()} servers.`)
+	Log.d("bot", "Ready!")
+	Log.d("bot", `Logged in as ${client.user.username}. Watching ${client.servers.size()} servers.`)
 })
 
 client.once("ready", () => thisisthepartwherehekillsyou(client))
@@ -65,7 +64,7 @@ client.on("messageCreate", async (message) => {
 		message.reply(commandHandler.list.map(c => `${c.name} - ${c.description}\n`).join(""))
 		return;
 	}
-	console.info(`[INFO] Trying to find ${requestedCommand} in CommandHandler...`)
+	Log.d("bot", `Trying to find ${requestedCommand} in CommandHandler...`)
 	const command = commandHandler.find(requestedCommand)
 
 	if (!command) return message.reply("Command not found")

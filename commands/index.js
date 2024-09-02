@@ -1,3 +1,4 @@
+import { Log } from "../utilities/log.js"
 /**
  * @interface Command
  * @prop {string} name - Command name
@@ -65,7 +66,7 @@ class CommandHandler {
 	 * @param {Command} command - Command to register
 	 */
 	register(command) {
-		console.log(`[INFO] Registered command ${command.name} with ${command.requiredArguments} required args.`)
+		Log.d("handler", `Registered command ${command.name} with ${command.requiredArguments} required args.`)
 		this.#commands.set(
 			command.name,
 			command
