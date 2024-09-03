@@ -4,7 +4,7 @@ import fs from "node:fs"
 
 import { Client } from "revolt.js"
 import { CommandHandler } from "./commands/index.js"
-import { guildJoin, guildLeave, messageSend, thisisthepartwherehekillsyou } from "./events/index.js"
+import { guildJoin, guildLeave, messageSend, thisisthepartwherehekillsyou, syncConfig } from "./events/index.js"
 import { Log } from "./utilities/log.js"
 
 const client = new Client()
@@ -38,6 +38,7 @@ client.once("ready", () => {
 })
 
 client.once("ready", () => thisisthepartwherehekillsyou(client))
+client.once("ready", async () => syncConfig(Array.from(client.servers.values())))
 
 // TODO make this a bit cleaner maybe?
 // is it even necesary though
