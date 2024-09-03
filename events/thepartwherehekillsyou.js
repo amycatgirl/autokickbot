@@ -24,7 +24,8 @@ function thisisthepartwherehekillsyou(ctx) {
 
 			const inactiveUsers = await knex(server.id)
 				.where('lastActive', '<', knex.raw(`NOW() - INTERVAL '${currentServerConfig.maxInactivePeriod}'`))
-				.select();
+				.select()
+				.map(row => row.user);
 
 			if (!inactiveUsers || inactiveUsers.length === 0) {
 				Log.d("kill", `There are no members to kick in ${server.name}. Skipping!`)
