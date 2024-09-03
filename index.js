@@ -72,6 +72,8 @@ client.on("messageCreate", async (message) => {
 
 	try {
 		command.checkArguments(args)
+		command.checkPermissionsAgainstCallee(message.member)
+
 		const result = await command.execute(args, message)
 
 		if (result) {
@@ -79,6 +81,8 @@ client.on("messageCreate", async (message) => {
 		}
 	} catch (error) {
 		await message.reply(`\`\`\`js\n${await error}\n\`\`\``)
+
+		console.error(error)
 	}
 })
 
