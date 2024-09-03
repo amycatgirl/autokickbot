@@ -11,8 +11,13 @@ services:
   bot:
     build: .
     env_file: .env
-    volumes:
-      - .:/www/autokick
+    develop:
+      watch:
+        - path: .
+          action: sync+restart
+          target: /www/autokick
+          ignore:
+            - node_modules
     depends_on:
       - db
 
