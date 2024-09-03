@@ -5,15 +5,11 @@ import { Log } from "../utilities/log.js"
  * @param {import("revolt.js").Server[]}
  */
 async function syncConfig(servers) {
-	knex.schema.hasTable("config").then((exists) => {
-		if (!exists) {
-			return knex.schema.createTable("config", (table) => {
-				table.string("server", 26)
-				table.string("maxInactivePeriod") // NOTE: https://www.postgresql.org/docs/8.2/datatype-datetime.html
-				table.unique(["server"])
-			})
-		}
-	})
+	knex.schema.createTable("config", (table) => {
+		table.string("server", 26)
+		table.string("maxInactivePeriod") // NOTE: https://www.postgresql.org/docs/8.2/datatype-datetime.html
+		table.unique(["server"])
+	}).catch(() => {})
 
 	for await (const server of servers) {
 		const result = await knex("config").insert({
