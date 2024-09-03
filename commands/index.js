@@ -5,6 +5,7 @@ import { Log } from "../utilities/log.js"
  * @prop {number} [argumentAmount] - Amount of required arguments
  * @prop {string} [description] - Command description
  * @prop {string} [usage] - How the command should be used
+ * @prop {(keyof typeof import("revolt.js").Permission)[]} [requiredPermissions] - Permisions required to run the command
  */
 
 /**
@@ -37,12 +38,24 @@ class Command {
 		this.description = null
 		this.usage = null
 		this.requiredArguments = null
+ 		/** @type {(keyof typeof import("revolt.js").Permission)[]}*/
+		this.requiredPermissions = []
 	}
 
 	async execute() {}
 
 	checkArguments(args) {
-		if (args.length < this.requiredArguments ?? 0) throw new Error(`You are missing ${this.requiredArguments - args.length} arguments.`)
+		if (!args || (args.length < this.requiredArguments ?? 0)) throw new Error(`You are missing ${this.requiredArguments - args.length} arguments.`)
+	}
+
+	/**
+	 * @param {import("revolt.js").ServerMember} member
+	 */
+	checkPermissionsAgainstCallee(member) {
+		if (this.requiredPermissions.length == 0) return
+		if (member.hasPermission(member.server, ...this.requiredPermissions)) {
+			return
+		} else throw new Error("Unauthorized.")
 	}
 }
 
