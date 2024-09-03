@@ -20,13 +20,14 @@ function thisisthepartwherehekillsyou(ctx) {
 				Log.w("kill", "I did not have the permission to kick users, skipping this server...")
 				continue;
 			}
+			const currentServerConfig = await knex("config").first().where({ server: server.id })
 
-			const inactiveUsers = await Server(server.id)
-				.where('lastActive', '<', knex.raw('NOW() - INTERVAL \'1 week\''))
-				.select('user').then(rows => rows.map(row => row.user));
+			const inactiveUsers = await knex(server.id)
+				.where('lastActive', '<', knex.raw(`NOW() - INTERVAL '${currentServerConfig.maxInactivePeriod}'`))
+				.select();
 
 			if (!inactiveUsers || inactiveUsers.length === 0) {
-				Log.d("kill", "There are no members to kick. Awesome!")
+				Log.d("kill", `There are no members to kick in ${server.name}. Skipping!`)
 				continue;
 			}
 
@@ -59,6 +60,8 @@ function thisisthepartwherehekillsyou(ctx) {
 				Log.d("kill", "User kicked! Next!")
 			}
 		}
+		
+		Log.d("kill", "Done checking all servers. Sleeping...")
 	}, 60000)
 }
 
