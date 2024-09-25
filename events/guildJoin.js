@@ -1,4 +1,4 @@
-import { knex } from "../database/index.js"
+import { knex } from "../database/postgres.js"
 import { Log } from "../utilities/log.js"
 
 const artificialDelay = (amount) => new Promise((res) => { setTimeout(() => res(), amount * 1000) })

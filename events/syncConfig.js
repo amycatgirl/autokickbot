@@ -1,4 +1,4 @@
-import { knex } from "../database/index.js"
+import { knex } from "../database/postgres.js"
 import { Log } from "../utilities/log.js"
 
 /**
@@ -14,7 +14,7 @@ async function syncConfig(servers) {
 	for await (const server of servers) {
 		const result = await knex("config").insert({
 			server: server.id,
-			maxInactivePeriod: "1 week"
+			maxInactivePeriod: "1 weeks"
 		}).onConflict("server").ignore().returning(["server", "maxInactivePeriod"])
 
 		Log.d("sync", `Synced config for server ${server.name}. Result: ${result}`)

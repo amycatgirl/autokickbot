@@ -1,4 +1,4 @@
-import { knex } from "../database/index.js"
+import { knex } from "../database/postgres.js"
 import { Log } from "../utilities/log.js"
 /**
  * Action to perform when the bot leaves a server

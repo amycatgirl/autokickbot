@@ -1,5 +1,5 @@
 import { Command } from "../index.js"
-import { knex } from "../../database/index.js"
+import { knex } from "../../database/postgres.js"
 import { inspect } from "node:util"
 /**
  * @implements {import("../index.js").Command}

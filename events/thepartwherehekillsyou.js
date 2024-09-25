@@ -1,6 +1,23 @@
-import { Server, knex } from "../database/index.js"
-import { inspect } from "node:util"
-import { Log } from "../utilities/log.js"
+import { inspect } from "node:util";
+import { Log } from "../utilities/log.js";
+import { Client, Server } from "revolt.js";
+
+/**
+ * Can we kick this guy
+ * @param {string} id - User ID
+ * @param {Server} server - Target Server
+ * @param {Client} ctx - Context client
+ */
+const canKick = async (id, server, ctx) => {
+  const targetUser = await server.fetchMember(id);
+  const self = await server.fetchMember(ctx.user.id);
+  return (
+    self.hasPermission(server, "KickMembers") &&
+    targetUser.inferiorTo(self) &&
+    server.ownerId !== targetUser.user.id
+  );
+};
+
 /**
  * The actual autokicking part.
  *
@@ -9,62 +26,54 @@ import { Log } from "../utilities/log.js"
  * @see https://www.youtube.com/watch?v=4dxTJC_LuuE
  *
  * TODO: allow servers to have their own config
- * 
+ *
+ * @async
+ * @param {string} key - Key name (usually <server>:<user>)
  * @param {import("revolt.js").Client} ctx - Context/Client
  */
-function thisisthepartwherehekillsyou(ctx) {
-	setInterval(async () => {
-		Log.d("kill", "It's voring time :3")
-		for (const server of ctx.servers.values()) {
-			if (!server.havePermission("KickMembers")) {
-				Log.w("kill", "I did not have the permission to kick users, skipping this server...")
-				continue;
-			}
-			const currentServerConfig = await knex("config").first().where({ server: server.id })
+async function thisisthepartwherehekillsyou(key, ctx) {
+  const [server, user, type] = key.split(":");
 
-			const inactiveUsers = (await knex(server.id)
-				.where('lastActive', '<', knex.raw(`NOW() - INTERVAL '${currentServerConfig.maxInactivePeriod}'`))
-				.select()).map(row => row.user)
+  // We are very sure that the server is on cache, unless
+  // revolt.js shits it's pants again, which it probably will
+  const targetServer = ctx.servers.get(server);
+  Log.d(
+    "tpwhky",
+    "Attempting to kick user with ID of " + user + " from " + targetServer.name
+  );
+  const dmChannelWithUser = await ctx.users.get(user).openDM();
+  switch (type) {
+    case "w":
+      await dmChannelWithUser.sendMessage({
+        embeds: [
+          {
+            title: `You are about to get kicked from ${targetServer.name}`,
+            description:
+              `${targetServer.name} needs you to be active in order to remain there. Send at the very least one message and continue chatting with others in ${targetServer.name}!`,
+          },
+        ],
+      });
+      Log.d("tpwhky", "Succesfully warned user!");
+      break;
 
-			console.log(inactiveUsers)
-				
-			if (!inactiveUsers || inactiveUsers.length === 0) {
-				Log.d("kill", `There are no members to kick in ${server.name}. Skipping!`)
-				continue;
-			}
+    case "k":
+      if (await canKick(user, targetServer, ctx)) {
+        await dmChannelWithUser.sendMessage({
+          embeds: [
+            {
+              title: `You have been kicked from ${targetServer.name} for inactivity`,
+              description:
+                "Do not worry, you can still join back by looking the server up on [Revolt Discover](</discover>) or by asking a friend for an invite back in.",
+            },
+          ],
+        });
 
-			for (const user of inactiveUsers) {
-				const fetchedUser = await ctx.users.fetch(user)
-				const fetchedMember = await server.fetchMember(fetchedUser)
-				const self = await server.fetchMember(ctx.user)
-
-				if (!fetchedMember.inferiorTo(self)) {
-					Log.w("kill", "I can't kick this user! My role is inferior to them, skipping!")
-					continue;
-				}
-
-				Log.d("kill", "Attempting to kick this user: " + inspect(fetchedUser))
-
-				const dms = await fetchedUser.openDM()
-				await dms.sendMessage({
-					embeds: [
-						{
-							title: `Kicked from ${server.name} for inactivity`,
-							description: `You have been from ${server.name} kicked for inactivity. If you wish to continue being inside the server, rejoin it via discover or via an invite link.`
-						}
-					]
-				})
-				await server.kickUser(user)
-
-				// Remove user from db.
-				await Server(server.id).where("user", user).del()
-
-				Log.d("kill", "User kicked! Next!")
-			}
-		}
-		
-		Log.d("kill", "Done checking all servers. Sleeping...")
-	}, 60000)
+        await targetServer.kickUser(user);
+      } else {
+        Log.w("tpwhky", "We can't kick this user, skipping!");
+      }
+      break;
+  }
 }
 
-export { thisisthepartwherehekillsyou }
+export { thisisthepartwherehekillsyou };
