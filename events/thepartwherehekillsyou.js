@@ -1,6 +1,7 @@
-import { inspect } from "node:util";
+import { knex } from "../database/postgres.js";
 import { Log } from "../utilities/log.js";
 import { Client, Server } from "revolt.js";
+import dayjs from "dayjs";
 
 /**
  * Can we kick this guy
@@ -37,6 +38,18 @@ async function thisisthepartwherehekillsyou(key, ctx) {
   // We are very sure that the server is on cache, unless
   // revolt.js shits it's pants again, which it probably will
   const targetServer = ctx.servers.get(server);
+
+  const { maxInactivePeriod } = await knex("config").first().where({
+    server,
+  })
+
+  const [amount, unit] = maxInactivePeriod.split(" ")
+
+  let timeUntilKick = dayjs.duration(amount, unit)
+  
+  timeUntilKick = timeUntilKick.subtract(timeUntilKick.asSeconds() / 2, "s")
+
+
   Log.d(
     "tpwhky",
     "Attempting to kick user with ID of " + user + " from " + targetServer.name
@@ -49,7 +62,7 @@ async function thisisthepartwherehekillsyou(key, ctx) {
           {
             title: `You are about to get kicked from ${targetServer.name}`,
             description:
-              `${targetServer.name} needs you to be active in order to remain there. Send at the very least one message and continue chatting with others in ${targetServer.name}!`,
+              `Hello, this is ${targetServer.name}. You have been inactive here for quite some time, and will be removed from the server if you do not send another message within ${timeUntilKick.humanize()}. We will not notify you again unless you are removed. **This is not a punishment**, you will be able to rejoin the server at any time following such removal.`,
           },
         ],
       });
@@ -63,7 +76,7 @@ async function thisisthepartwherehekillsyou(key, ctx) {
             {
               title: `You have been kicked from ${targetServer.name} for inactivity`,
               description:
-                "Do not worry, you can still join back by looking the server up on [Revolt Discover](</discover>) or by asking a friend for an invite back in.",
+                `You were removed from ${targetServer.name} for inactivity. **This is not a punishment**, you may rejoin the server at any time.`,
             },
           ],
         });

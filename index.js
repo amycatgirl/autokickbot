@@ -1,5 +1,7 @@
 import dayjs from "dayjs"
 import DurationPlugin from "dayjs/plugin/duration.js"
+import RelativeTime from "dayjs/plugin/relativeTime.js"
+
 import "dotenv/config"
 import { Client } from "revolt.js"
 
@@ -11,6 +13,7 @@ import { guildJoin, guildLeave, messageSend, syncConfig, thisisthepartwherehekil
 import { Log } from "./utilities/log.js"
 
 // extend dayjs here
+dayjs.extend(RelativeTime)
 dayjs.extend(DurationPlugin)
 
 const client = new Client()
