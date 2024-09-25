@@ -10,7 +10,7 @@ services:
       - db_volume:/var/lib/postgresql/data
 
   redis:
-    image: redis/redis-stack
+    image: redis/redis-stack-server
     restart: always
     ports:
       - 6379:6379
