@@ -1,36 +1,16 @@
+//@ts-check
+
 import { Log } from "../utilities/log.js"
+
 /**
- * @interface Command
+ * AK Command, must be overloaded.
+ * 
+ * @class
  * @prop {string} name - Command name
  * @prop {number} [argumentAmount] - Amount of required arguments
  * @prop {string} [description] - Command description
  * @prop {string} [usage] - How the command should be used
  * @prop {(keyof typeof import("revolt.js").Permission)[]} [requiredPermissions] - Permisions required to run the command
- */
-
-/**
- *
- * Execute a command asynchronously
- *
- * @async
- * @function
- * @name Command#execute
- * @param {string[]} args - Arguments to pass to the command
- * @param {import("revolt.js").Message} ctx - Context
- * @returns {Promise<string | void>}
- */
-
-/**
- * Check if the command has the minimum amount of arguments required
- * @function
- * @name Command#checkArguments
- * @param {string[]} args - Arguments that will be passed to the command
- */
-
-
-/**
- * AK command, can be registered via the command handler class
- * @implements {Command}
  */
 class Command {
 	constructor() {
@@ -42,17 +22,34 @@ class Command {
 		this.requiredPermissions = []
 	}
 
-	async execute() {}
+	/**
+	 * Execute a command asynchronously
+	 *
+	 * @param {string[]} args - Arguments to pass to the command
+	 * @param {import("revolt.js").Message} ctx - Context
+	 * @returns {Promise<string | void>}
+	 */
+	async execute(args, ctx) {}
 
+	/**
+	 * Check if the command has the minimum amount of arguments required
+	 * @param {string[]} args - Arguments that will be passed to the command
+	 * @throws {Error}
+	 * 
+	 * TODO: Custom errors
+	 */
 	checkArguments(args) {
 		if (!args || (args.length < this.requiredArguments ?? 0)) throw new Error(`You are missing ${this.requiredArguments - args.length} arguments.`)
 	}
 
 	/**
-	 * @param {import("revolt.js").ServerMember} member
+	 * @param {import("revolt.js").Member | undefined} member
 	 */
 	checkPermissionsAgainstCallee(member) {
+		if (!member) throw Error("Missing member object!")
+
 		if (this.requiredPermissions.length == 0) return
+		if (!member.server) throw new Error("Bot commands not available through DMs.")
 		if (member.hasPermission(member.server, ...this.requiredPermissions)) {
 			return
 		} else throw new Error("Unauthorized.")
@@ -69,7 +66,7 @@ class CommandHandler {
 
 	/**
 	 * @param {string} name - Name of the command
-	 * @returns {Command}
+	 * @returns {Command | undefined}
 	 */
 	find(name) {
 		return this.#commands.get(name)

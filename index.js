@@ -1,3 +1,4 @@
+//@ts-check
 import dayjs from "dayjs"
 import DurationPlugin from "dayjs/plugin/duration.js"
 import RelativeTime from "dayjs/plugin/relativeTime.js"
@@ -9,8 +10,9 @@ import fs from "node:fs"
 
 import { CommandHandler } from "./commands/index.js"
 import { pub, sub } from "./database/redis.js"
-import { guildJoin, guildLeave, messageSend, syncConfig, thisisthepartwherehekillsyou } from "./events/index.js"
+import { guildJoin, guildLeave, memberJoin, memberLeave, messageSend, syncConfig, thisisthepartwherehekillsyou } from "./events/index.js"
 import { Log } from "./utilities/log.js"
+import { knex } from "./database/postgres.js"
 
 // extend dayjs here
 dayjs.extend(RelativeTime)
@@ -18,6 +20,10 @@ dayjs.extend(DurationPlugin)
 
 const client = new Client()
 const commandHandler = new CommandHandler()
+/**
+ * @prop {string} AK_TOKEN - Bot Token
+ * @prop {string} AK_PREFIX - Bot Prefix
+ */
 const { AK_TOKEN, AK_PREFIX } = process.env
 
 async function registerCommands() {
@@ -26,7 +32,6 @@ async function registerCommands() {
 		if (fs.lstatSync(`./commands/${element}`).isDirectory()) {
 			const commandFiles = fs.readdirSync(`./commands/${element}`).filter(file => file.endsWith(".js"));
 			for (const file of commandFiles) {
-				/** @type {{ default: import("./commands").Command }} */
 				const { default: command } = await import(`./commands/${element}/${file}`)
 
 				commandHandler.register(new command())
@@ -45,31 +50,35 @@ sub.pSubscribe("__keyevent@0__:expired", async (message, pattern) => {
 
 client.once("ready", () => {
 	Log.d("bot", "Ready!")
-	Log.d("bot", `Logged in as ${client.user.username}. Watching ${client.servers.size()} servers.`)
+	Log.d("bot", `Logged in as ${client.user?.username}. Watching ${Array.from(client.servers.values()).length} servers.`)
 })
 
 client.once("ready", async () => syncConfig(Array.from(client.servers.values())))
 
 // TODO make this a bit cleaner maybe?
 // is it even necesary though
-client.on("serverCreate", async s => await guildJoin(s))
-client.on("serverLeave", async s => await guildLeave(s))
-client.on("messageCreate", async s => await messageSend(s))
+client.on("packet", async p => p.type === "ServerCreate" && await guildJoin(p, client))
+client.on("server/delete", async s => await guildLeave(s))
+client.on("message", async m => await messageSend(m))
+client.on("member/join", async m => await memberJoin(m))
+client.on("member/leave", async m => await memberLeave(m))
 
-client.on("messageCreate", async (message) => {
+client.on("message", async (message) => {
 	if (
-		message.author.bot ||
-		message.author.id === client.user.id ||
+		message.author?.bot ||
+		message.author?._id === client.user?._id ||
 		!message.content ||
-		!message.content.startsWith(AK_PREFIX)
+		!message.content.startsWith(AK_PREFIX ?? "ak!")
 	) return
 
 	const args = message.content
 		.trim()
-		.substring(AK_PREFIX.length)
+		.substring((AK_PREFIX ?? "ak!").length)
 		.split(/ +/g)
 
 	const requestedCommand = args?.shift()
+
+	if (!requestedCommand) return;
 
 	if (requestedCommand === "help") {
 		message.reply(commandHandler.list.map(c => `${c.name} - ${c.description}\n`).join(""))
@@ -84,7 +93,7 @@ client.on("messageCreate", async (message) => {
 		command.checkArguments(args)
 		command.checkPermissionsAgainstCallee(message.member)
 
-		const result = await command.execute(message)
+		const result = await command.execute(args, message)
 
 		if (result) {
 			await message.reply(result)
@@ -97,10 +106,15 @@ client.on("messageCreate", async (message) => {
 })
 
 // Make sure commands are registered *before* the bot starts.
-registerCommands().then(() => client.loginBot(AK_TOKEN))
+registerCommands().then(() => {
+	if (!AK_TOKEN) throw new Error("Missing token!")
+	client.loginBot(AK_TOKEN)
+})
 
 process.on('SIGINT', async () => {
-	// Clean up the connection safely
+	// Clean up all connections safely
 	await pub.quit();
 	await sub.quit();
+
+	await knex.destroy()
 });

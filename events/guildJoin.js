@@ -1,117 +1,161 @@
-import { knex } from "../database/postgres.js"
-import { Log } from "../utilities/log.js"
+//@ts-check
+import { knex } from "../database/postgres.js";
+import { Log } from "../utilities/log.js";
+import { pub } from "../database/redis.js";
 
-const artificialDelay = (amount) => new Promise((res) => { setTimeout(() => res(), amount * 1000) })
+import dayjs from "dayjs";
+
+/**
+ * Async artificial delay
+ * @param {number} amount - Delay in seconds
+ * @return {Promise<void>}
+ */
+const artificialDelay = (amount) =>
+  new Promise((res) => {
+    setTimeout(() => res(), amount * 1000);
+  });
 
 /**
  * @param {number} maxTries - Amount of tries to attempt
  * @param {import("revolt.js").Channel} channel - Channel to find messages in
- * @param [import("revolt.js").Member] member - Member to find
+ * @param {import("revolt.js").Member} [member] - Member to find
  * @returns {Promise<import("revolt.js").Message>}
  */
-async function findLatestMessageFrom(
-	maxTries,
-	channel,
-	member
-) {
-	let context;
-	async function recurse(depth) {
-		let result;
-		if (depth >= maxTries) throw new Error(`Could not find user in channel after ${maxTries} tries.`)
+async function findLatestMessageFrom(maxTries, channel, member) {
+  let context;
+  /**
+   * @param {number} depth
+   * @returns {Promise<import("revolt.js").Message>}
+   */
+  async function recurse(depth) {
+    let result;
+    if (depth >= maxTries)
+      throw new Error(
+        `Could not find user in channel after ${maxTries} tries.`
+      );
 
-		const messages = await channel.fetchMessages({ limit: 100, before: context })
+    const messages = await channel.fetchMessages({
+      limit: 100,
+      before: context,
+    });
 
-		for (const message of messages) {
-			if (message.member === member) {
-				result = message;
-				break;
-			}
-		}
+    for (const message of messages) {
+      if (message.member === member) {
+        result = message;
+        break;
+      }
+    }
 
-		if (result) {
-			return result;
-		} else {
-			await artificialDelay(5)
+    if (result) {
+      return result;
+    } else {
+      await artificialDelay(5);
 
-			try {
-				const result = await recurse(depth + 1)
-				return result
-			} catch (error) {
-				// bubble the error up!
-				throw error
-			}
-		}
+      try {
+        const result = await recurse(depth + 1);
+        return result;
+      } catch (error) {
+        // bubble the error up!
+        throw error;
+      }
+    }
+  }
 
-	}
-
-	try {
-		const result = await recurse(1)
-		return result
-	} catch (error) {
-		// Bubble it even more!!!
-		throw error
-	}
+  try {
+    const result = await recurse(1);
+    return result;
+  } catch (error) {
+    // Bubble it even more!!!
+    throw error;
+  }
 }
 
 /**
  * Action to perform when the bot joins a new server
- * @param {import("revolt.js").Server} guild
+ * @param {Extract<import("revolt.js").ClientboundNotification, { type: "ServerCreate" }>} packet
+ * @param {import("revolt.js").Client} context
  */
-async function guildJoin(guild) {
-	Log.d("info", `Bot joined guild ${guild.name}`)
-	// Create a new table with the id of the server as it's name
-	await knex.schema.createTable(guild.id, (table) => {
-		table.string('user', 26)
-		table.timestamp('lastActive')
-		table.unique(["user"])
-	})
+async function guildJoin(packet, context) {
+  // find the last activity of EACH member
+  // if it couldn't find anything, set the timestamp to the join date
+  // can be expensive but eh, whatever
+  // it's not like large servers would use this bot... right???
 
-	// find the last activity of EACH member
-	// if it couldn't find anything, set the timestamp to the join date
-	// can be expensive but eh, whatever
-	// it's not like large servers would use this bot... right???
+  await knex("config")
+    .insert({
+      server: packet.server._id,
+      maxInactivePeriod: "1 weeks",
+    })
+    .onConflict("server")
+    .ignore()
+    .returning(["server", "maxInactivePeriod"]);
 
-	// TODO make proper logging function similar to android's Log class
-	Log.d("info", "Finding every user's last activity!")
+  /** @type {import("revolt.js").Server} */
+  const server =
+    context.servers.get(packet.server._id) ??
+    (await context.servers.fetch(packet.server._id));
 
-	const { _, members } = await guild.fetchMembers();
-	// filter out channels the bot cannot see
-	const channels = guild.channels.filter(channel => channel.orPermission("ViewChannel") && channel.type === "TextChannel")
+  // TODO make proper logging function similar to android's Log class
+  Log.d("info", "Finding every user's last activity!");
 
-	for await (const member of members) {
-		Log.d("gjoin", `Checking Member ${member.user.username}`)
-		if (member.user.bot) {
-			Log.w("gjoin", "Member is a bot, skipping!")
-			continue
-		};
+  const { members } = await server.fetchMembers();
+  // filter out channels the bot cannot see
+  const channels = server.channels.filter(
+    (channel) =>
+      channel?.havePermission("ViewChannel") &&
+      channel.channel_type === "TextChannel"
+  );
 
-		// try 10 full scrolls, if the user can't be found, give up :)		
-		for await (const channel of channels) {
-			Log.d("gjoin", `Checking messages from ${member.user.username} in ${channel.name}`)
-			try {
-				const foundMessage = await findLatestMessageFrom(10, channel, member)
-				Log.d("gjoin", "Found a message!")
+  for await (const member of members) {
+    Log.d("gjoin", `Checking Member ${member.user?.username}`);
+    if (member.user?.bot) {
+      Log.w("gjoin", "Member is a bot, skipping!");
+      continue;
+    }
 
-				// upsert user
-				await knex(guild.id).insert({
-					user: member.user.id,
-					lastActive: foundMessage.editedAt ?? foundMessage.createdAt
-				}).onConflict("user").merge()
+    // try 10 full scrolls, if the user can't be found, give up :)
+    for await (const channel of channels) {
+      Log.d(
+        "gjoin",
+        `Checking messages from ${member.user?.username} in ${channel?.name}`
+      );
+      try {
+        if (!channel) continue;
+        const foundMessage = await findLatestMessageFrom(10, channel, member);
+        Log.d("gjoin", "Found a message!");
 
-			} catch (error) {
-				// catch it here :3
-				Log.e("gjoin", error.message)	
-				
-				await knex(guild.id).insert({
-					user: member.user.id,
-					lastActive: member.joinedAt
-				}).onConflict("user").merge()
-				
-				continue;
-			}
-		}
-	}
+        const kickExpiry = Math.floor(
+          dayjs
+            // @ts-expect-error bitch i extended it
+            .duration(
+              dayjs(foundMessage.edited || foundMessage.createdAt)
+                .add(1, "week")
+                .diff(dayjs())
+            )
+            .as("seconds")
+        );
+        const warnExpiry = Math.floor(kickExpiry / 2);
 
+        const kickKey = `${packet.id}:${member.user?._id}:k`; // k stands for kick user
+        const warnKey = `${packet.id}:${member.user?._id}:w`; // w stands for warn user
+
+        console.log(kickExpiry);
+
+        await pub.set(kickKey, foundMessage._id, { EX: kickExpiry });
+        await pub.set(warnKey, foundMessage._id, { EX: warnExpiry });
+      } catch (error) {
+        // catch it here :3
+        Log.e("gjoin", error.message);
+
+        // await knex(packet.id).insert({
+        // 	user: member.user.id,
+        // 	lastActive: member.joinedAt
+        // }).onConflict("user").merge()
+
+        continue;
+      }
+    }
+  }
 }
 
-export { guildJoin }
+export { guildJoin };

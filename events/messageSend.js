@@ -48,7 +48,7 @@ async function messageSend(message) {
 
   if (!kickV && !warnV) {
 	Log.d("messageSend", `Setting ${kickKey} to ${message.id} with ${kickExpiry} TTL`)
-    await pub.set(kickKey, message.id, { EX: kickExpiry});
+  await pub.set(kickKey, message.id, { EX: kickExpiry});
 	await pub.set(warnKey, message.id, { EX: warnExpiry});
 	
   } else if (kickV && !warnV) {
