@@ -155,16 +155,15 @@ async function guildJoin(packet, context, isFromCommand=false) {
           dayjs
             // @ts-expect-error bitch i extended it
             .duration(
-		dayjs()
-                .add(1, "week")
+		    1, "week"
             )
             .as("seconds")
         );
 
 	const warnExpiry = Math.floor(kickExpiry / 2);
 
-        const kickKey = `${packet.id}:${member.user?._id}:k`; // k stands for kick user
-        const warnKey = `${packet.id}:${member.user?._id}:w`; // w stands for warn user
+        const kickKey = `${packet.server._id}:${member.user?._id}:k`; // k stands for kick user
+        const warnKey = `${packet.server._id}:${member.user?._id}:w`; // w stands for warn user
 
         console.log(kickExpiry);
 
