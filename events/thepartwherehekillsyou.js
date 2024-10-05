@@ -1,3 +1,4 @@
+// @ts-check
 import { knex } from "../database/postgres.js";
 import { Log } from "../utilities/log.js";
 import { Client, Server } from "revolt.js";
@@ -11,11 +12,13 @@ import dayjs from "dayjs";
  */
 const canKick = async (id, server, ctx) => {
   const targetUser = await server.fetchMember(id);
-  const self = await server.fetchMember(ctx.user.id);
+  if (!ctx.user) return false
+
+  const self = await server.fetchMember(ctx.user._id);
   return (
     self.hasPermission(server, "KickMembers") &&
     targetUser.inferiorTo(self) &&
-    server.ownerId !== targetUser.user.id
+    server.owner !== targetUser.user?._id
   );
 };
 
@@ -39,12 +42,15 @@ async function thisisthepartwherehekillsyou(key, ctx) {
   // revolt.js shits it's pants again, which it probably will
   const targetServer = ctx.servers.get(server);
 
+  if (!targetServer) return
+
   const { maxInactivePeriod } = await knex("config").first().where({
     server,
   })
 
   const [amount, unit] = maxInactivePeriod.split(" ")
 
+  // @ts-expect-error duration was extended on index.js
   let timeUntilKick = dayjs.duration(amount, unit)
   
   timeUntilKick = timeUntilKick.subtract(timeUntilKick.asSeconds() / 2, "s")
@@ -52,17 +58,17 @@ async function thisisthepartwherehekillsyou(key, ctx) {
 
   Log.d(
     "tpwhky",
-    "Attempting to kick user with ID of " + user + " from " + targetServer.name
+    "Attempting to kick user with ID of " + user + " from " + targetServer?.name
   );
-  const dmChannelWithUser = await ctx.users.get(user).openDM();
+  const dmChannelWithUser = await ctx.users.get(user)?.openDM();
   switch (type) {
     case "w":
-      await dmChannelWithUser.sendMessage({
+      await dmChannelWithUser?.sendMessage({
         embeds: [
           {
-            title: `You are about to get kicked from ${targetServer.name}`,
+            title: `You are about to get kicked from ${targetServer?.name}`,
             description:
-              `Hello, this is ${targetServer.name}. You have been inactive here for quite some time, and will be removed from the server if you do not send another message within ${timeUntilKick.humanize()}. We will not notify you again unless you are removed. **This is not a punishment**, you will be able to rejoin the server at any time following such removal.`,
+              `Hello, this is ${targetServer?.name}. You have been inactive here for quite some time, and will be removed from the server if you do not send another message within ${timeUntilKick.humanize()}. We will not notify you again unless you are removed. **This is not a punishment**, you will be able to rejoin the server at any time following such removal.`,
           },
         ],
       });
@@ -71,7 +77,7 @@ async function thisisthepartwherehekillsyou(key, ctx) {
 
     case "k":
       if (await canKick(user, targetServer, ctx)) {
-        await dmChannelWithUser.sendMessage({
+        await dmChannelWithUser?.sendMessage({
           embeds: [
             {
               title: `You have been kicked from ${targetServer.name} for inactivity`,
@@ -81,7 +87,9 @@ async function thisisthepartwherehekillsyou(key, ctx) {
           ],
         });
 
-        await targetServer.kickUser(user);
+        const member = await targetServer.fetchMember(user);
+	
+	await member.kick()
       } else {
         Log.w("tpwhky", "We can't kick this user, skipping!");
       }

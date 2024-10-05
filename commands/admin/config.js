@@ -8,7 +8,7 @@ class ConfigCommand extends Command {
 	constructor() {
 		super();
 
-		this.name = "config",
+		this.name = "config"
 		this.description = "Configure server options such as timeouts and messages.",
 		this.requiredArguments = 1 // format is <get|set|entries> [config_name] [value]
 		this.usage = "config <get|set|entries> [key] [value]"
@@ -22,7 +22,7 @@ class ConfigCommand extends Command {
 	 * @returns {Promise<string | void>}
 	 */
 	async execute(args, ctx) {
-		const currentServerConfig = await knex("config").first().where({ server: ctx.server.id })
+		const currentServerConfig = await knex("config").first().where({ server: ctx.channel.server._id })
 		
 		if (!currentServerConfig) throw new Error("Something went very wrong! Missing server configuration.")
 		
@@ -33,7 +33,7 @@ class ConfigCommand extends Command {
 			case "set":
 				const value = args.slice(2).join(" ")
 				if (!args[1] in currentServerConfig) return "Key not found, use `entries` to see which keys are valid."
-				const changed = await knex("config").update({ [args[1]]: value }).returning(args[1]).where({ server: ctx.server.id })
+				const changed = await knex("config").update({ [args[1]]: value }).returning(args[1]).where({ server: ctx.channel.server._id })
 
 				return `Changed key \`${args[1]}\` successfully!\nChanges:\n\`\`\`js\n${inspect(changed)}\n\`\`\``
 			case "entries":

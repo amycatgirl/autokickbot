@@ -1,27 +1,33 @@
-import { ServerMember } from "revolt.js";
+// @ts-check
 import { Log } from "../utilities/log.js";
+import { knex } from "../database/postgres.js";
+import { pub } from "../database/redis.js";
+
+import dayjs from "dayjs"
 
 /**
  * Add user to redis kv
- * @param {ServerMember} member
+ * @param {import("revolt.js").Member} member
  */
 async function memberJoin(member) {
-  Log.d("mjoin", `Member ${member.user.username} joined!`);
+  Log.d("mjoin", `Member ${member.user?.username} joined!`);
 
   const { maxInactivePeriod } = await knex("config").first().where({
-    server: member.server.id,
+    server: member.server?._id,
   });
 
   const [amount, unit] = maxInactivePeriod.split(" ");
 
+  // @ts-expect-error duration has been extended on index.js
   const kickExpiry = dayjs.duration(amount, unit).asSeconds(); // please abstract, please, i beg you
+  // @ts-expect-error duration has been extended on index.js
   const warnExpiry = dayjs.duration(amount / 2, unit).asSeconds();
 
-  const kickKey = `${message.server.id}:${message.author.id}:k`;
-  const warnKey = `${message.server.id}:${message.author.id}:w`;
+  const kickKey = `${member.server?._id}:${member.user?._id}:k`;
+  const warnKey = `${member.server?._id}:${member.user?._id}:w`;
 
-  await pub.set(kickKey, message.id, { EX: kickExpiry });
-  await pub.set(warnKey, message.id, { EX: warnExpiry });
+  await pub.set(kickKey, "0".repeat(26), { EX: kickExpiry });
+  await pub.set(warnKey, "0".repeat(26), { EX: warnExpiry });
 }
 
 export default memberJoin

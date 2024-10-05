@@ -44,7 +44,7 @@ async function registerCommands() {
 	Log.d("handler", "Registered " + commandHandler.list.length + " commands") 
 }
 
-sub.pSubscribe("__keyevent@0__:expired", async (message, pattern) => {
+sub.pSubscribe("__keyevent@0__:expired", async (message) => {
 	await thisisthepartwherehekillsyou(message, client)
 })
 

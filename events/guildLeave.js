@@ -11,10 +11,15 @@ async function guildLeave(guild) {
 	await knex("config").where({ server: guild }).select("*").delete()
 
 	const keys = await getKeys(`${guild}:*`)
+	
+	const batch = pub.multi()
+	
 
-	for await (const key of keys) {
-		await pub.del(key) // TODO: Batch
+	for (const key of keys) {
+		batch.del(key)
 	}
+
+	await batch.exec()
 }
 
 export { guildLeave }
