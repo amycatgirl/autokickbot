@@ -2,7 +2,6 @@
 import { knex } from "../database/postgres.js";
 import { Log } from "../utilities/log.js";
 import { pub } from "../database/redis.js";
-import { canKick} from "../utilities/canKick.js";
 import dayjs from "dayjs";
 
 /**
@@ -156,16 +155,11 @@ async function guildJoin(packet, context, isFromCommand=false) {
           dayjs
             // @ts-expect-error bitch i extended it
             .duration(
-              dayjs(member.joined_at)
+		dayjs()
                 .add(1, "week")
-                .diff(dayjs())
             )
             .as("seconds")
         );
-
-	if (kickExpiry < 0) {
-		continue
-	}
 
 	const warnExpiry = Math.floor(kickExpiry / 2);
 
@@ -185,9 +179,6 @@ async function guildJoin(packet, context, isFromCommand=false) {
         continue;
       }
     }
-
-    //@ts-ignore
-    if (!didFindMessage && await canKick(member._id.user, member.server, member.client)) await member.kick()
   }
 }
 
