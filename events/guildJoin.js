@@ -49,7 +49,7 @@ async function findLatestMessageFrom(maxTries, channel, member) {
     if (result) {
       return result;
     } else {
-      await artificialDelay(5);
+      await artificialDelay(2);
 
       try {
         const result = await recurse(depth + 1);
@@ -121,7 +121,7 @@ async function guildJoin(packet, context) {
       );
       try {
         if (!channel) continue;
-        const foundMessage = await findLatestMessageFrom(10, channel, member);
+        const foundMessage = await findLatestMessageFrom(5, channel, member);
         Log.d("gjoin", "Found a message!");
 
         const kickExpiry = Math.floor(
@@ -146,6 +146,26 @@ async function guildJoin(packet, context) {
       } catch (error) {
         // catch it here :3
         Log.e("gjoin", error.message);
+        
+	const kickExpiry = Math.floor(
+          dayjs
+            // @ts-expect-error bitch i extended it
+            .duration(
+              dayjs(member.joined_at)
+                .add(1, "week")
+                .diff(dayjs())
+            )
+            .as("seconds")
+        );
+        const warnExpiry = Math.floor(kickExpiry / 2);
+
+        const kickKey = `${packet.id}:${member.user?._id}:k`; // k stands for kick user
+        const warnKey = `${packet.id}:${member.user?._id}:w`; // w stands for warn user
+
+        console.log(kickExpiry);
+
+        await pub.set(kickKey, "0".repeat(26), { EX: kickExpiry });
+        await pub.set(warnKey, "0".repeat(26), { EX: warnExpiry });
 
         // await knex(packet.id).insert({
         // 	user: member.user.id,
