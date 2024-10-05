@@ -74,13 +74,15 @@ async function findLatestMessageFrom(maxTries, channel, member) {
  * Action to perform when the bot joins a new server
  * @param {Extract<import("revolt.js").ClientboundNotification, { type: "ServerCreate" }>} packet
  * @param {import("revolt.js").Client} context
+ * @param {boolean} isFromCommand=false
  */
-async function guildJoin(packet, context) {
+async function guildJoin(packet, context, isFromCommand=false) {
   // find the last activity of EACH member
   // if it couldn't find anything, set the timestamp to the join date
   // can be expensive but eh, whatever
   // it's not like large servers would use this bot... right???
 
+  if (!isFromCommand)
   await knex("config")
     .insert({
       server: packet.server._id,
