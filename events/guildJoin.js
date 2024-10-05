@@ -115,8 +115,10 @@ async function guildJoin(packet, context, isFromCommand=false) {
       continue;
     }
 
+    let didFindMessage = false
     // try 10 full scrolls, if the user can't be found, give up :)
     for await (const channel of channels) {
+
       Log.d(
         "gjoin",
         `Checking messages from ${member.user?.username} in ${channel?.name}`
@@ -124,7 +126,8 @@ async function guildJoin(packet, context, isFromCommand=false) {
       try {
         if (!channel) continue;
         const foundMessage = await findLatestMessageFrom(5, channel, member);
-        Log.d("gjoin", "Found a message!");
+        didFindMessage = true
+	Log.d("gjoin", "Found a message!");
 
         const kickExpiry = Math.floor(
           dayjs
@@ -160,11 +163,10 @@ async function guildJoin(packet, context, isFromCommand=false) {
             .as("seconds")
         );
 
-	//@ts-expect-error server exists
-	if (kickExpiry < 0 && await canKick(member._id.user, member.server, member.client)) {
-		await member.kick()
+	if (kickExpiry < 0) {
 		continue
 	}
+
 	const warnExpiry = Math.floor(kickExpiry / 2);
 
         const kickKey = `${packet.id}:${member.user?._id}:k`; // k stands for kick user
@@ -183,6 +185,9 @@ async function guildJoin(packet, context, isFromCommand=false) {
         continue;
       }
     }
+
+    //@ts-ignore
+    if (!didFindMessage && await canKick(member._id.user, member.server, member.client)) await member.kick()
   }
 }
 
