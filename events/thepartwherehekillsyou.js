@@ -1,26 +1,9 @@
 // @ts-check
 import { knex } from "../database/postgres.js";
 import { Log } from "../utilities/log.js";
-import { Client, Server } from "revolt.js";
+import { canKick } from "../utilities/canKick.js";
 import dayjs from "dayjs";
 
-/**
- * Can we kick this guy
- * @param {string} id - User ID
- * @param {Server} server - Target Server
- * @param {Client} ctx - Context client
- */
-const canKick = async (id, server, ctx) => {
-  const targetUser = await server.fetchMember(id);
-  if (!ctx.user) return false
-
-  const self = await server.fetchMember(ctx.user._id);
-  return (
-    self.hasPermission(server, "KickMembers") &&
-    targetUser.inferiorTo(self) &&
-    server.owner !== targetUser.user?._id
-  );
-};
 
 /**
  * The actual autokicking part.
