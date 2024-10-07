@@ -86,6 +86,9 @@ async function guildJoin(packet, context, isFromCommand=false) {
     .insert({
       server: packet.server._id,
       maxInactivePeriod: "1 weeks",
+      minInactivePeriod: "3 days",
+      warnPeriod: "3 days",
+      calculateWarnPeriod: true
     })
     .onConflict("server")
     .ignore()
@@ -130,7 +133,6 @@ async function guildJoin(packet, context, isFromCommand=false) {
 
         const kickExpiry = Math.floor(
           dayjs
-            // @ts-expect-error bitch i extended it
             .duration(
               dayjs(foundMessage.edited || foundMessage.createdAt)
                 .add(1, "week")
@@ -153,7 +155,6 @@ async function guildJoin(packet, context, isFromCommand=false) {
         
 	const kickExpiry = Math.floor(
           dayjs
-            // @ts-expect-error bitch i extended it
             .duration(
 		    1, "week"
             )

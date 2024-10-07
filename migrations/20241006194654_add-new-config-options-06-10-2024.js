@@ -6,8 +6,9 @@
 export function up(knex) {
 	return knex.schema.alterTable("config", (table) => {
 		table.string("minInactivePeriod")
-		table.boolean("calculateMinPeriod")
-	})  
+		table.string("warnPeriod")
+		table.boolean("calculateWarnPeriod")
+	})
 }
 
 /**
