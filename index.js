@@ -53,7 +53,7 @@ client.once("ready", () => {
 	Log.d("bot", `Logged in as ${client.user?.username}. Watching ${Array.from(client.servers.values()).length} servers.`)
 })
 
-client.once("ready", async () => syncConfig(Array.from(client.servers.values())))
+client.once("ready", async () => syncConfig())
 
 // TODO make this a bit cleaner maybe?
 // is it even necesary though
