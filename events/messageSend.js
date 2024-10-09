@@ -40,6 +40,7 @@ async function messageSend(message) {
   );
 
   if (!message.member.inferior && (kickV || warnV)) {
+     Log.d("messageSend", "deleting keys!")
      const bulk = pub.multi()
 	  .del(`${message.channel.server._id}:${message.author._id}:k`)
 	  .del(`${message.channel.server._id}:${message.author._id}:k`)
