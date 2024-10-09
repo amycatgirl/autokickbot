@@ -10,7 +10,7 @@ class RegenerateCommand extends Command {
 
 		this.requiredArguments = 1
 
-		this.requiredPermissions = ["ManageServer"]
+		this.dev = true	
 	}
 
 	async execute(args, ctx) {

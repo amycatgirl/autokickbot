@@ -12,11 +12,11 @@ import dayjs from "dayjs"
 async function memberJoin(member) {
   Log.d("mjoin", `Member ${member.user?.username} joined!`);
 
-  const { maxInactivePeriod } = await knex("config").first().where({
+  const { minInactivePeriod } = await knex("config").first().where({
     server: member.server?._id,
   });
 
-  const [amount, unit] = maxInactivePeriod.split(" ");
+  const [amount, unit] = minInactivePeriod.split(" ");
 
   // @ts-expect-error duration has been extended on index.js
   const kickExpiry = dayjs.duration(amount, unit).asSeconds(); // please abstract, please, i beg you
