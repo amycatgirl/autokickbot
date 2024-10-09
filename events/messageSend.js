@@ -12,7 +12,6 @@ async function messageSend(message) {
     message.author.bot ||
     !message.channel.server ||
     message.system ||
-    !message.member.inferior ||
     !message.author
   )
     return; // Exclude bot users from the action
@@ -39,6 +38,17 @@ async function messageSend(message) {
   const warnV = await pub.get(
     `${message.channel.server._id}:${message.author._id}:k`
   );
+
+  if (!message.member.inferior && kickV) {
+     Log.d("messageSend", "deleting keys!")
+     const bulk = pub.multi()
+	  .del(`${message.channel.server._id}:${message.author._id}:k`)
+	  .del(`${message.channel.server._id}:${message.author._id}:k`)
+ 	
+	  await bulk.exec()
+
+	  return;
+  } else if (!message.member.inferior) return;
 
   Log.d("messageSend", `${amount} ${unit}`)
   const kickExpiry = dayjs.duration(amount, unit).asSeconds();
