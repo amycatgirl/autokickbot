@@ -18,6 +18,8 @@ services:
   bot:
     build: .
     env_file: .env
+    environment:
+      NODE_ENV: production
     restart: always
     develop:
       watch:

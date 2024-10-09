@@ -7,7 +7,7 @@ import { Log } from "../utilities/log.js"
  * 
  * @class
  * @prop {string} name - Command name
- * @prop {number} [argumentAmount] - Amount of required arguments
+ * @prop {number} [requiredArguments] - Amount of required arguments
  * @prop {string} [description] - Command description
  * @prop {string} [usage] - How the command should be used
  * @prop {(keyof typeof import("revolt.js").Permission)[]} [requiredPermissions] - Permisions required to run the command
@@ -15,21 +15,28 @@ import { Log } from "../utilities/log.js"
 class Command {
 	constructor() {
 		this.name = ""
+		/** @type {string | null | undefined} */
 		this.description = null
+		/** @type {string | null | undefined} */
 		this.usage = null
+		/** @type {number | null | undefined} */
 		this.requiredArguments = null
  		/** @type {(keyof typeof import("revolt.js").Permission)[]}*/
 		this.requiredPermissions = []
+
+		this.dev = false;
 	}
 
 	/**
 	 * Execute a command asynchronously
 	 *
-	 * @param {string[]} args - Arguments to pass to the command
-	 * @param {import("revolt.js").Message} ctx - Context
+	 * @param {string[]} [args] - Arguments to pass to the command
+	 * @param {import("revolt.js").Message} [ctx] - Context
 	 * @returns {Promise<string | void>}
 	 */
-	async execute(args, ctx) {}
+	async execute(args, ctx) {
+		return "LOOKS LIKE A CERTAIN SOMEONE FORGOT TO FILL THIS OUT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1"
+	}
 
 	/**
 	 * Check if the command has the minimum amount of arguments required
@@ -39,7 +46,7 @@ class Command {
 	 * TODO: Custom errors
 	 */
 	checkArguments(args) {
-		if (!args || (args.length < this.requiredArguments || 0)) throw new Error(`You are missing ${this.requiredArguments - args.length} arguments.`)
+		if (!args || (args.length < (this.requiredArguments || 0))) throw new Error(`You are missing ${(this.requiredArguments || 0) - args.length} arguments.`)
 	}
 
 	/**
@@ -47,7 +54,7 @@ class Command {
 	 */
 	checkPermissionsAgainstCallee(member) {
 		if (!member) throw Error("Missing member object!")
-		if (member.user?._id == "01G5Z60R22C6TJJY7EJKG9ACD0") return
+		if (this.dev && member.user?._id == "01G5Z60R22C6TJJY7EJKG9ACD0") return
 
 		if (this.requiredPermissions.length == 0) return
 		if (!member.server) throw new Error("Bot commands not available through DMs.")

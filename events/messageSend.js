@@ -17,14 +17,13 @@ async function messageSend(message) {
     return; // Exclude bot users from the action
 
   // query server config
-  /** @type {{ maxInactivePeriod: string }} */
-  const { maxInactivePeriod } = await knex("config").first().where({
+  const config = await knex("config").first().where({
     server: message.channel.server._id,
   });
 
-  const [amount, unit] = maxInactivePeriod.split(" ")
+  const [amount, unit] = config.maxInactivePeriod.split(" ")
 
-  Log.d("messageSend", `Server's max inactive period: ${maxInactivePeriod}`)
+  Log.d("messageSend", `Server's max inactive period: ${config.maxInactivePeriod}`)
 
   // format goes as follows
   /*
@@ -36,7 +35,7 @@ async function messageSend(message) {
     `${message.channel.server._id}:${message.author._id}:k`
   );
   const warnV = await pub.get(
-    `${message.channel.server._id}:${message.author._id}:k`
+    `${message.channel.server._id}:${message.author._id}:w`
   );
 
   if (!message.member.inferior && kickV) {
@@ -59,7 +58,7 @@ async function messageSend(message) {
 
   if (!kickV && !warnV) {
 	Log.d("messageSend", `Setting ${kickKey} to ${message._id} with ${kickExpiry} TTL`)
-  await pub.set(kickKey, message._id, { EX: kickExpiry});
+	  await pub.set(kickKey, message._id, { EX: kickExpiry});
 	await pub.set(warnKey, message._id, { EX: warnExpiry});
 	
   } else if (kickV && !warnV) {
