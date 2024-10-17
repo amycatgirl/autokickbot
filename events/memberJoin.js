@@ -3,7 +3,7 @@ import { Log } from "../utilities/log.js";
 import { knex } from "../database/postgres.js";
 import { pub } from "../database/redis.js";
 
-import dayjs from "dayjs"
+import dayjs from "dayjs";
 
 /**
  * Add user to redis kv
@@ -18,16 +18,14 @@ async function memberJoin(member) {
 
   const [amount, unit] = minInactivePeriod.split(" ");
 
-  // @ts-expect-error duration has been extended on index.js
   const kickExpiry = dayjs.duration(amount, unit).asSeconds(); // please abstract, please, i beg you
-  // @ts-expect-error duration has been extended on index.js
   const warnExpiry = dayjs.duration(amount / 2, unit).asSeconds();
 
   const kickKey = `${member.server?._id}:${member.user?._id}:k`;
   const warnKey = `${member.server?._id}:${member.user?._id}:w`;
 
-  await pub.set(kickKey, "0".repeat(26), { EX: kickExpiry });
-  await pub.set(warnKey, "0".repeat(26), { EX: warnExpiry });
+  await pub.set(kickKey, "0".repeat(26), "EX", kickExpiry);
+  await pub.set(warnKey, "0".repeat(26), "EX", warnExpiry);
 }
 
-export default memberJoin
+export default memberJoin;
