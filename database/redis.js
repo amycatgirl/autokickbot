@@ -1,39 +1,34 @@
 // @ts-check
-import { createClient } from "redis";
+import { Redis } from "ioredis";
 import { Log } from "../utilities/log.js";
-import { getKeys } from "../utilities/pubScan.js"
+import { getKeys } from "../utilities/pubScan.js";
 
 const KeyTypes = {
-	Kick: "k",
-	Warn: "w",
-}
+  Kick: "k",
+  Warn: "w",
+};
 
-const pub = createClient({
-    url: "redis://redis:6379", // Handled by docker
-})
+const pub = new Redis(6379, "redis");
 
-pub.on("error", error => {
-    Log.e("redis", "An error has occured within the Redis client!")
-    Log.e("redis", error)
-})
+pub.on("error", (error) => {
+  Log.e("redis", "An error has occured within the Redis client!");
+  Log.e("redis", error.message);
+  if (error.stack) Log.e("redis", error.stack);
+});
 
 pub.once("connect", () => {
-    Log.d("redis", "Connection established!")
-})
+  Log.d("redis", "Connection established!");
+});
 
-await pub.connect()
+pub.config("SET", "notify-keyspace-events", "Ex");
 
-pub.configSet("notify-keyspace-events", "Ex");
+const sub = pub.duplicate();
 
-const sub = pub.duplicate()
-
-
-sub.on("error", error => {
-    Log.e("redis", "An error has occured within the Redis client!")
-    Log.e("redis", error)
-})
-
-await sub.connect()
+sub.on("error", (error) => {
+  Log.e("redis", "An error has occured within the Redis client!");
+  Log.e("redis", error.message);
+  if (error.stack) Log.e("redis", error.stack);
+});
 
 /**
  *
@@ -47,31 +42,31 @@ await sub.connect()
  *
  * @async
  * @param {string} server - Server ID
- * @param {typeof KeyTypes[Keys]} type - w is for warnings, k is for kicks 
+ * @param {typeof KeyTypes[Keys]} type - w is for warnings, k is for kicks
  * @param {Configuration} seconds - Configuration
  *
  * @return {Promise<KeysUpdated>}
  */
 async function migrateKeysToNewTTL(server, type, seconds) {
-	const keysToMigrate = await getKeys(`${server}:*:${type}`)
-	const diff = seconds.newValue - seconds.oldValue
+  const keysToMigrate = await getKeys(`${server}:*:${type}`);
+  const diff = seconds.newValue - seconds.oldValue;
 
-	let keysUpdated = 0
+  let keysUpdated = 0;
 
-	const batch = pub.multi()
+  const batch = pub.multi();
 
-	for await (const key of keysToMigrate) {
-		const value = await pub.ttl(key)
-		const newTTL = value + diff
+  for await (const key of keysToMigrate) {
+    const value = await pub.ttl(key);
+    const newTTL = value + diff;
 
-		batch.expire(key, newTTL)
+    batch.expire(key, newTTL);
 
-		keysUpdated++
-	}
+    keysUpdated++;
+  }
 
-	await batch.exec()
+  await batch.exec();
 
-	return keysUpdated
+  return keysUpdated;
 }
 
-export { pub, sub, migrateKeysToNewTTL }
+export { pub, sub, migrateKeysToNewTTL };

@@ -75,24 +75,24 @@ async function findLatestMessageFrom(maxTries, channel, member) {
  * @param {import("revolt.js").Client} context
  * @param {boolean} isFromCommand=false
  */
-async function guildJoin(packet, context, isFromCommand=false) {
+async function guildJoin(packet, context, isFromCommand = false) {
   // find the last activity of EACH member
   // if it couldn't find anything, set the timestamp to the join date
   // can be expensive but eh, whatever
   // it's not like large servers would use this bot... right???
 
   if (!isFromCommand)
-  await knex("config")
-    .insert({
-      server: packet.server._id,
-      maxInactivePeriod: "1 weeks",
-      minInactivePeriod: "3 days",
-      warnPeriod: "3 days",
-      calculateWarnPeriod: true
-    })
-    .onConflict("server")
-    .ignore()
-    .returning(["server", "maxInactivePeriod"]);
+    await knex("config")
+      .insert({
+        server: packet.server._id,
+        maxInactivePeriod: "1 weeks",
+        minInactivePeriod: "3 days",
+        warnPeriod: "3 days",
+        calculateWarnPeriod: true,
+      })
+      .onConflict("server")
+      .ignore()
+      .returning(["server", "maxInactivePeriod"]);
 
   /** @type {import("revolt.js").Server} */
   const server =
@@ -117,10 +117,9 @@ async function guildJoin(packet, context, isFromCommand=false) {
       continue;
     }
 
-    let didFindMessage = false
+    let didFindMessage = false;
     // try 10 full scrolls, if the user can't be found, give up :)
     for await (const channel of channels) {
-
       Log.d(
         "gjoin",
         `Checking messages from ${member.user?.username} in ${channel?.name}`
@@ -128,8 +127,8 @@ async function guildJoin(packet, context, isFromCommand=false) {
       try {
         if (!channel) continue;
         const foundMessage = await findLatestMessageFrom(5, channel, member);
-        didFindMessage = true
-	Log.d("gjoin", "Found a message!");
+        didFindMessage = true;
+        Log.d("gjoin", "Found a message!");
 
         const kickExpiry = Math.floor(
           dayjs
@@ -147,29 +146,23 @@ async function guildJoin(packet, context, isFromCommand=false) {
 
         console.log(kickExpiry);
 
-        await pub.set(kickKey, foundMessage._id, { EX: kickExpiry });
-        await pub.set(warnKey, foundMessage._id, { EX: warnExpiry });
+        await pub.set(kickKey, foundMessage._id, "EX", kickExpiry);
+        await pub.set(warnKey, foundMessage._id, "EX", warnExpiry);
       } catch (error) {
         // catch it here :3
         Log.e("gjoin", error.message);
-        
-	const kickExpiry = Math.floor(
-          dayjs
-            .duration(
-		    1, "week"
-            )
-            .as("seconds")
-        );
 
-	const warnExpiry = Math.floor(kickExpiry / 2);
+        const kickExpiry = Math.floor(dayjs.duration(1, "week").as("seconds"));
+
+        const warnExpiry = Math.floor(kickExpiry / 2);
 
         const kickKey = `${packet.server._id}:${member.user?._id}:k`; // k stands for kick user
         const warnKey = `${packet.server._id}:${member.user?._id}:w`; // w stands for warn user
 
         console.log(kickExpiry);
 
-        await pub.set(kickKey, "0".repeat(26), { EX: kickExpiry });
-        await pub.set(warnKey, "0".repeat(26), { EX: warnExpiry });
+        await pub.set(kickKey, "0".repeat(26), "EX", kickExpiry);
+        await pub.set(warnKey, "0".repeat(26), "EX", warnExpiry);
 
         // await knex(packet.id).insert({
         // 	user: member.user.id,
