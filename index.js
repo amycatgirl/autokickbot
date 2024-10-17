@@ -83,6 +83,7 @@ client.on(
 client.on("server/delete", async (s) => await guildLeave(s));
 client.on("member/join", async (m) => await memberJoin(m));
 client.on("member/leave", async (m) => await memberLeave(m));
+client.on("message", async (m) => await messageSend(m));
 
 client.on("message", async (message) => {
   if (
@@ -129,8 +130,6 @@ client.on("message", async (message) => {
       console.error(error);
     }
   }
-
-  await messageSend(message);
 });
 
 // Make sure commands are registered *before* the bot starts.
