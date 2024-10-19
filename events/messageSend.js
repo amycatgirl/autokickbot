@@ -21,9 +21,12 @@ async function messageSend(message) {
     server: message.channel.server._id,
   });
 
-  const [amount, unit] = config.maxInactivePeriod.split(" ")
+  const [amount, unit] = config.maxInactivePeriod.split(" ");
 
-  Log.d("messageSend", `Server's max inactive period: ${config.maxInactivePeriod}`)
+  Log.d(
+    "messageSend",
+    `Server's max inactive period: ${config.maxInactivePeriod}`
+  );
 
   // format goes as follows
   /*
@@ -39,17 +42,18 @@ async function messageSend(message) {
   );
 
   if (!message.member.inferior && kickV) {
-     Log.d("messageSend", "deleting keys!")
-     const bulk = pub.multi()
-	  .del(`${message.channel.server._id}:${message.author._id}:k`)
-	  .del(`${message.channel.server._id}:${message.author._id}:k`)
- 	
-	  await bulk.exec()
+    Log.d("messageSend", "deleting keys!");
+    const bulk = pub
+      .multi()
+      .del(`${message.channel.server._id}:${message.author._id}:k`)
+      .del(`${message.channel.server._id}:${message.author._id}:k`);
 
-	  return;
+    await bulk.exec();
+
+    return;
   } else if (!message.member.inferior) return;
 
-  Log.d("messageSend", `${amount} ${unit}`)
+  Log.d("messageSend", `${amount} ${unit}`);
   const kickExpiry = dayjs.duration(amount, unit).asSeconds();
   const warnExpiry = dayjs.duration(amount / 2, unit).asSeconds();
 
@@ -57,19 +61,20 @@ async function messageSend(message) {
   const warnKey = `${message.channel.server._id}:${message.author._id}:w`; // w stands for warn user
 
   if (!kickV && !warnV) {
-	Log.d("messageSend", `Setting ${kickKey} to ${message._id} with ${kickExpiry} TTL`)
-	  await pub.set(kickKey, message._id, { EX: kickExpiry});
-	await pub.set(warnKey, message._id, { EX: warnExpiry});
-	
+    Log.d(
+      "messageSend",
+      `Setting ${kickKey} to ${message._id} with ${kickExpiry} TTL`
+    );
+    await pub.set(kickKey, message._id, { EX: kickExpiry });
+    await pub.set(warnKey, message._id, { EX: warnExpiry });
   } else if (kickV && !warnV) {
-	Log.d("messageSend", `Updating ${warnKey} TTL to ${warnExpiry}`)
-	await pub.expire(kickKey, kickExpiry);
-	await pub.set(warnKey, message._id, { EX: warnExpiry});
+    Log.d("messageSend", `Updating ${kickKey} TTL to ${kickExpiry}`);
+    await pub.expire(kickKey, kickExpiry);
   } else {
-	Log.d("messageSend", `Updating ${kickKey} TTL to ${kickExpiry}`)
+    Log.d("messageSend", `Updating ${kickKey} TTL to ${kickExpiry}`);
     // Update the key's expiry date
     await pub.expire(kickKey, kickExpiry);
-	await pub.expire(warnKey, warnExpiry);
+    await pub.expire(warnKey, warnExpiry);
   }
 }
 
