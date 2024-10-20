@@ -2,17 +2,9 @@
 import { knex } from "../database/postgres.js";
 import { Log } from "../utilities/log.js";
 import { pub } from "../database/redis.js";
+import { artificialDelay } from "../utilities/artificialDelay.js";
 import dayjs from "dayjs";
-
-/**
- * Async artificial delay
- * @param {number} amount - Delay in seconds
- * @return {Promise<void>}
- */
-const artificialDelay = (amount) =>
-  new Promise((res) => {
-    setTimeout(() => res(), amount * 1000);
-  });
+import { fetchWithRatelimit } from "../utilities/fetchWithRatelimit.js";
 
 /**
  * @param {number} maxTries - Amount of tries to attempt
@@ -21,6 +13,7 @@ const artificialDelay = (amount) =>
  * @returns {Promise<import("revolt.js").Message>}
  */
 async function findLatestMessageFrom(maxTries, channel, member) {
+  /** @type {string | undefined} */
   let context;
   /**
    * @param {number} depth
@@ -33,7 +26,7 @@ async function findLatestMessageFrom(maxTries, channel, member) {
         `Could not find user in channel after ${maxTries} tries.`
       );
 
-    const messages = await channel.fetchMessages({
+    const messages = await fetchWithRatelimit(channel, {
       limit: 100,
       before: context,
     });
@@ -51,6 +44,7 @@ async function findLatestMessageFrom(maxTries, channel, member) {
       await artificialDelay(2);
 
       try {
+        context = messages.at(-1)?._id;
         const result = await recurse(depth + 1);
         return result;
       } catch (error) {
@@ -132,6 +126,7 @@ async function guildJoin(packet, context, isFromCommand = false) {
 
         const kickExpiry = Math.floor(
           dayjs
+            // @ts-expect-error extended.
             .duration(
               dayjs(foundMessage.edited || foundMessage.createdAt)
                 .add(1, "week")
@@ -150,8 +145,9 @@ async function guildJoin(packet, context, isFromCommand = false) {
         await pub.set(warnKey, foundMessage._id, "EX", warnExpiry);
       } catch (error) {
         // catch it here :3
-        Log.e("gjoin", error.message);
+        Log.e("gjoin", error);
 
+        // @ts-expect-error extended.
         const kickExpiry = Math.floor(dayjs.duration(1, "week").as("seconds"));
 
         const warnExpiry = Math.floor(kickExpiry / 2);
