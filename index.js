@@ -100,7 +100,10 @@ client.on("message", async (message) => {
 
   const requestedCommand = args?.shift();
 
-  if (!requestedCommand) return;
+  if (!requestedCommand) {
+    await messageSend(message);
+    return;
+  }
 
   if (requestedCommand === "help") {
     message.reply(
