@@ -108,8 +108,8 @@ client.on("message", async (message) => {
   }
 
   if (requestedCommand === "help") {
-    message.reply(
-      commandHandler.list.map((c) => `${c.name} - ${c.description}\n`).join("")
+    await message.reply(
+        commandHandler.list.map((c) => `${c.name} - ${c.description}\n`).join("")
     );
     return;
   }
@@ -139,9 +139,9 @@ client.on("message", async (message) => {
 });
 
 // Make sure commands are registered *before* the bot starts.
-registerCommands().then(() => {
+registerCommands().then(async () => {
   if (!AK_TOKEN) throw new Error("Missing token!");
-  client.loginBot(AK_TOKEN);
+  await client.loginBot(AK_TOKEN);
 });
 
 process.on("SIGINT", async () => {

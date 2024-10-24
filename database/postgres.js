@@ -11,16 +11,4 @@ const knex = Knex({
 	}
 });
 
-/**
- * @typedef {Object} ServerActivity
- * @prop {string} user - ID of the user
- * @prop {number} lastActive - Timestamp
- */
-
-/**
- * @param {string} id - Server id
- * @returns {import("knex").QueryBuilder<ServerActivity, {}>}
- */
-function Server(id) { return knex(id) }
-
-export { knex, Server }
+export { knex }

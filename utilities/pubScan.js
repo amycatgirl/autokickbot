@@ -1,5 +1,5 @@
 // @ts-check
-import { pub } from "../database/redis.js";
+import {pub} from "../database/redis.js";
 
 /**
  * @async
@@ -11,8 +11,7 @@ import { pub } from "../database/redis.js";
  * @returns {Promise<any>}
  */
 async function getKeys(pattern = "*", count = 10) {
-  /** @type {string[]} */
-  const result = await new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     /** @type {string[]} */
     const results = [];
 
@@ -35,8 +34,6 @@ async function getKeys(pattern = "*", count = 10) {
       reject(error);
     });
   });
-
-  return result;
 }
 
 export { getKeys };

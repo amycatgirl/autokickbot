@@ -26,7 +26,7 @@ class NotADeveloperException extends Error {
  * @prop {number} [requiredArguments] - Amount of required arguments
  * @prop {string} [description] - Command description
  * @prop {string} [usage] - How the command should be used
- * @prop {(keyof typeof import("revolt.js").Permission)[]} [requiredPermissions] - Permisions required to run the command
+ * @prop {(keyof typeof import("revolt.js").Permission)[]} [requiredPermissions] - Permissions required to run the command
  */
 class Command {
   constructor() {
@@ -75,9 +75,9 @@ class Command {
    */
   checkPermissionsAgainstCallee(member) {
     if (!member) throw Error("Missing member object!");
-    if (this.dev && member.user?._id == "01G5Z60R22C6TJJY7EJKG9ACD0") return;
+    if (this.dev && member.user?._id === "01G5Z60R22C6TJJY7EJKG9ACD0") return;
 
-    if (this.requiredPermissions.length == 0) return;
+    if (this.requiredPermissions.length === 0) return;
     if (!member.server)
       throw new Error("Bot commands not available through DMs.");
     if (member.hasPermission(member.server, ...this.requiredPermissions)) {

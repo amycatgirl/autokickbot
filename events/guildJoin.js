@@ -1,10 +1,10 @@
 //@ts-check
-import { knex } from "../database/postgres.js";
-import { Log } from "../utilities/log.js";
-import { pub } from "../database/redis.js";
-import { artificialDelay } from "../utilities/artificialDelay.js";
+import {knex} from "../database/postgres.js";
+import {Log} from "../utilities/log.js";
+import {pub} from "../database/redis.js";
+import {artificialDelay} from "../utilities/artificialDelay.js";
 import dayjs from "dayjs";
-import { fetchWithRatelimit } from "../utilities/fetchWithRatelimit.js";
+import {fetchWithRateLimit} from "../utilities/fetchWithRateLimit.js";
 
 /**
  * @param {number} maxTries - Amount of tries to attempt
@@ -26,7 +26,7 @@ async function findLatestMessageFrom(maxTries, channel, member) {
         `Could not find user in channel after ${maxTries} tries.`
       );
 
-    const messages = await fetchWithRatelimit(channel, {
+    const messages = await fetchWithRateLimit(channel, {
       limit: 100,
       before: context,
     });
@@ -45,8 +45,7 @@ async function findLatestMessageFrom(maxTries, channel, member) {
 
       try {
         context = messages.at(-1)?._id;
-        const result = await recurse(depth + 1);
-        return result;
+        return await recurse(depth + 1);
       } catch (error) {
         // bubble the error up!
         throw error;
@@ -55,8 +54,7 @@ async function findLatestMessageFrom(maxTries, channel, member) {
   }
 
   try {
-    const result = await recurse(1);
-    return result;
+    return await recurse(1);
   } catch (error) {
     // Bubble it even more!!!
     throw error;
@@ -159,13 +157,6 @@ async function guildJoin(packet, context, isFromCommand = false) {
 
         await pub.set(kickKey, "0".repeat(26), "EX", kickExpiry);
         await pub.set(warnKey, "0".repeat(26), "EX", warnExpiry);
-
-        // await knex(packet.id).insert({
-        // 	user: member.user.id,
-        // 	lastActive: member.joinedAt
-        // }).onConflict("user").merge()
-
-        continue;
       }
     }
   }

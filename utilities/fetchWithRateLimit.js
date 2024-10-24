@@ -22,7 +22,7 @@ class MessageNotFoundException extends Error {
  * @returns {Promise<import("revolt.js").Message[]>}
  */
 
-async function fetchWithRatelimit(channel, options) {
+async function fetchWithRateLimit(channel, options) {
   const [error, message] = await catchErrorTyped(
     channel.fetchMessages(options),
     [Error]
@@ -31,7 +31,7 @@ async function fetchWithRatelimit(channel, options) {
   if (error && error.response.status === 429) {
     await artificialDelay(error.response["x-ratelimit-reset-after"], true);
 
-    return await fetchWithRatelimit(channel, options);
+    return await fetchWithRateLimit(channel, options);
   }
 
   Log.d("found message", `${message.author}`);
@@ -39,4 +39,4 @@ async function fetchWithRatelimit(channel, options) {
   return message;
 }
 
-export { fetchWithRatelimit, MessageNotFoundException };
+export { fetchWithRateLimit, MessageNotFoundException };

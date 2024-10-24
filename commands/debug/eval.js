@@ -3,7 +3,7 @@ import { inspect } from "node:util"
 
 const clean = async (text, ctx) => {
 	// If our input is a promise, await it before continuing
-	if (text && text.constructor.name == "Promise")
+	if (text && text.constructor.name === "Promise")
 	  text = await text;
 
 	// If the response isn't a string, `util.inspect()`
@@ -38,7 +38,8 @@ class EvalCommand extends Command {
 
 	/**
 	 * @param {string[]} args
-	 * @returns {string | void}
+	 * @param ctx
+	 * @returns {Promise<string|void>}
 	 */
 	async execute(args, ctx) {
 		const evaled = eval(args.join(" "))
