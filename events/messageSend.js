@@ -68,16 +68,16 @@ async function messageSend(message) {
       "messageSend",
       `Setting ${kickKey} to ${message._id} with ${kickExpiry} TTL`
     );
-    await pub.set(kickKey, message._id, { EX: kickExpiry });
-    await pub.set(warnKey, message._id, { EX: warnExpiry });
+    await pub.set(kickKey, message._id, "EX", kickExpiry);
+    await pub.set(warnKey, message._id, "EX", warnExpiry);
   } else if (kickV && !warnV) {
     Log.d("messageSend", `Updating ${kickKey} TTL to ${kickExpiry}`);
-    await pub.set(kickKey, message._id, { EX: kickExpiry });
+    await pub.set(kickKey, message._id, "EX", kickKey);
   } else {
     Log.d("messageSend", `Updating ${kickKey} TTL to ${kickExpiry}`);
     // Update the key's expiry date
-    await pub.set(kickKey, message._id, { EX: kickExpiry });
-    await pub.set(warnKey, message._id, { EX: warnExpiry });
+    await pub.set(kickKey, message._id, "EX", kickExpiry);
+    await pub.set(warnKey, message._id, "EX", warnExpiry);
   }
 }
 
