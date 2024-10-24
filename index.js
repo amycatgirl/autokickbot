@@ -90,8 +90,10 @@ client.on("message", async (message) => {
     message.author?._id === client.user?._id ||
     !message.content ||
     !message.content.startsWith(AK_PREFIX ?? "ak!")
-  )
+  ) {
+    await messageSend(message);
     return;
+  }
 
   const args = message.content
     .trim()
