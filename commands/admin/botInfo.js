@@ -1,10 +1,10 @@
 // @ts-check
-import { Command } from "../index.js";
-import { knex } from "../../database/postgres.js";
-import { Log } from "../../utilities/log.js";
-import { pub } from "../../database/redis.js";
+import {Command} from "../index.js";
+import {knex} from "../../database/postgres.js";
+import {Log} from "../../utilities/log.js";
+import {pub} from "../../database/redis.js";
 
-import { inspect } from "node:util";
+import {inspect} from "node:util";
 
 class InformationCommand extends Command {
   constructor() {
@@ -16,9 +16,10 @@ class InformationCommand extends Command {
 
   /**
    * @param {string[]} args
+   * @param _ctx
    * @returns {Promise<string | void>}
    */
-  async execute(args) {
+  async execute(args, _ctx) {
     const postgres_version = await knex.raw("select version()");
     Log.d("psql", postgres_version);
 
