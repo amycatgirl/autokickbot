@@ -5,14 +5,16 @@
  * @param {import("revolt.js").Client} ctx - Context client
  */
 export const canKick = async (id, server, ctx) => {
-  const targetUser = await server.fetchMember(id);
-  if (!ctx.user) return false
+    const targetUser = await server.fetchMember(id);
+    if (!ctx.user) return false
 
-  const self = await server.fetchMember(ctx.user._id);
-  return (
-    self.hasPermission(server, "KickMembers") &&
-    targetUser.inferiorTo(self) &&
-    server.owner !== targetUser.user?._id
-  );
+    const self = await server.fetchMember(ctx.user._id);
+    return (
+        !targetUser.user.bot &&
+        targetUser.user._id !== self.user._id &&
+        self.hasPermission(server, "KickMembers") &&
+        targetUser.inferiorTo(self) &&
+        server.owner !== targetUser.user._id
+    );
 };
 

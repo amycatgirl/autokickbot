@@ -1,6 +1,5 @@
-import { catchErrorTyped } from "./catchErrorTyped.js";
-import { Log } from "./log.js";
-import { artificialDelay } from "./artificialDelay.js";
+import {catchErrorTyped} from "./catchErrorTyped.js";
+import {artificialDelay} from "./artificialDelay.js";
 
 class MessageNotFoundException extends Error {
   constructor() {
@@ -23,7 +22,7 @@ class MessageNotFoundException extends Error {
  */
 
 async function fetchWithRateLimit(channel, options) {
-  const [error, message] = await catchErrorTyped(
+  const [error, messages] = await catchErrorTyped(
     channel.fetchMessages(options),
     [Error]
   );
@@ -34,9 +33,7 @@ async function fetchWithRateLimit(channel, options) {
     return await fetchWithRateLimit(channel, options);
   }
 
-  Log.d("found message", `${message.author}`);
-
-  return message;
+  return messages;
 }
 
 export { fetchWithRateLimit, MessageNotFoundException };

@@ -1,8 +1,9 @@
 import dayjs from "dayjs";
 
-import { knex } from "../database/postgres.js";
-import { pub } from "../database/redis.js";
-import { Log } from "../utilities/log.js";
+import {knex} from "../database/postgres.js";
+import {pub} from "../database/redis.js";
+import {Log} from "../utilities/log.js";
+import {canKick} from "../utilities/canKick.js";
 
 /**
  * @param {import("revolt.js").Message} message
@@ -17,6 +18,8 @@ async function messageSend(message) {
     !message.author
   ) {
     Log.d("msgsend", "Ignoring...");
+
+    return;
   } // Exclude bot users from the action
 
   // query server config
@@ -44,7 +47,7 @@ async function messageSend(message) {
     `${message.channel.server._id}:${message.author._id}:w`
   );
 
-  if (!message.member.inferior && kickV) {
+  if (!(await canKick(message.author._id, message.channel.server, message.client)) && kickV) {
     Log.d("messageSend", "Superior, deleting keys!");
     const bulk = pub
       .multi()
@@ -57,7 +60,7 @@ async function messageSend(message) {
   }
 
   Log.d("messageSend", `Config value: ${amount} ${unit}`);
-  const kickExpiry = dayjs.duration(amount, unit).asSeconds();
+  const kickExpiry = dayjs.duration(Number(amount), unit).asSeconds();
   const warnExpiry = dayjs.duration(amount / 2, unit).asSeconds();
 
   const kickKey = `${message.channel.server._id}:${message.author._id}:k`; // k stands for kick user
